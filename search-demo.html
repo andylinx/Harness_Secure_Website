@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Watch the Search Run — finance / GLM-5 · AutoSafeHarness</title>
+<meta name="description" content="A real, version-by-version replay of AutoSafeHarness's search loop on a trading agent: warm-start from CaMeL/DRIFT/OpenClaw, four rounds of real cascade scores, and a round that scored well but was rejected once peer review checked it empirically — built from the actual proposer logs and cascade results for finance / GLM-5." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;550;600;650;700;750;800;850&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="search-demo.css" />
+</head>
+<body>
+
+<!-- ================= NAV ================= -->
+<nav>
+  <div class="wrap">
+    <a href="index.html" class="brand" style="text-decoration:none">AutoSafe<span>Harness</span></a>
+    <div class="links">
+      <a href="index.html#problem">Problem</a>
+      <a href="index.html#method">Method</a>
+      <a href="index.html#demo">Demos</a>
+      <a href="index.html#results">Results</a>
+      <a href="index.html#cite">Cite</a>
+      <a href="https://github.com/SaFo-Lab/AutoSafeHarness" target="_blank" rel="noopener">Code</a>
+      <a class="pill" href="assets/AutoSafeHarness_paper.pdf" target="_blank" rel="noopener">Read the paper</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ================= HERO ================= -->
+<header class="sd-hero">
+  <div class="wrap">
+    <a class="backlink" href="index.html#method">&larr; Back to AutoSafeHarness</a>
+    <span class="eyebrow" style="margin-top:16px;display:inline-flex">🔁 Search loop · finance domain · victim model GLM-5</span>
+    <h1>One cell of the grid, <em>run to convergence.</em></h1>
+    <p class="dek">The <a href="index.html#method">method figure</a> shows the search loop as six abstract stages. This page is that loop, run for real, on a trading &amp; portfolio agent: place a trade, move funds, summarize a report &mdash; attacks here look like an unauthorized transfer or a wash trade, not an abstract exploit. Five candidates the proposer actually built, cascade-evaluated every round, including one that scored well on paper but was rejected once checked more carefully &mdash; for one (domain&nbsp;&times;&nbsp;model) cell out of the fifteen in the paper. Every score below is real; round summaries are told at a high level so the story stays easy to follow.</p>
+    <p class="kbdhint">Step through with <kbd>&larr;</kbd> <kbd>&rarr;</kbd> or the arrows below &middot; <kbd>space</kbd> plays / pauses</p>
+  </div>
+</header>
+
+<!-- ================= THE LOOP, LIVE (recreates the talk figure exactly) ================= -->
+<section>
+  <div class="wrap">
+    <div class="sd-layout reveal">
+
+      <!-- LEFT: the loop + the score trajectory, stacked, sticky -->
+      <div class="sd-layout-left">
+        <div class="hloop" id="sdHloop" aria-label="AutoSafeHarness closed-loop search diagram, tracking the current step">
+          <svg viewBox="0 0 760 500" role="img">
+            <defs>
+              <marker id="sdah" markerWidth="9" markerHeight="9" refX="6.5" refY="3.2" orient="auto">
+                <path d="M0,0 L7,3.2 L0,6.4 Z" fill="#aeb5c4"></path>
+              </marker>
+            </defs>
+            <ellipse class="ring-c" cx="380" cy="250" rx="64" ry="40"></ellipse>
+            <path class="seg" d="M 442 69  A 300 185 0 0 1 603 126" marker-end="url(#sdah)"></path>
+            <path class="seg" d="M 665 193 A 300 185 0 0 1 665 307" marker-end="url(#sdah)"></path>
+            <path class="seg" d="M 603 374 A 300 185 0 0 1 442 431" marker-end="url(#sdah)"></path>
+            <path class="seg" d="M 318 431 A 300 185 0 0 1 157 374" marker-end="url(#sdah)"></path>
+            <path class="seg" d="M 95 307  A 300 185 0 0 1 95 193"  marker-end="url(#sdah)"></path>
+            <path class="seg" d="M 157 126 A 300 185 0 0 1 318 69"  marker-end="url(#sdah)"></path>
+            <path id="sdLoopPath" d="M 380 65 A 300 185 0 0 1 380 435 A 300 185 0 0 1 380 65" fill="none" stroke="none"></path>
+            <circle class="pulse" r="6">
+              <animateMotion dur="13s" repeatCount="indefinite" rotate="auto"><mpath href="#sdLoopPath"></mpath></animateMotion>
+            </circle>
+          </svg>
+
+          <div class="hcenter">
+            <div class="logo">AutoSafe<br><span>Harness</span></div>
+            <div class="sublogo mono" id="sdCenterVer">search loop</div>
+          </div>
+
+          <div class="hnode" data-stage="design" style="left:50%;top:11%">
+            <div class="hi">🤖</div><div class="hn">Designer</div>
+          </div>
+          <div class="hnode" data-stage="harness" style="left:87%;top:30%">
+            <div class="hi">🧩</div><div class="hn">Harness <span class="mono" style="font-size:.9em">H′</span></div>
+          </div>
+          <div class="hnode crit" data-stage="crit" style="left:87%;top:70%">
+            <div class="hi">🔍</div><div class="hn">Reviewer</div>
+          </div>
+          <div class="hnode" data-stage="test" style="left:50%;top:89%">
+            <div class="hi">🧪</div><div class="hn">Cascade Test</div>
+          </div>
+          <div class="hnode" data-stage="analyze" style="left:13%;top:70%">
+            <div class="hi">🧠</div><div class="hn">Analyzer</div>
+          </div>
+          <div class="hnode" data-stage="warm" style="left:13%;top:30%">
+            <div class="hi">💡</div><div class="hn">Experience</div>
+          </div>
+        </div>
+        <div class="sd-warmcaption">▶ <b>Warm-start</b> &middot; OpenClaw &middot; DRIFT &middot; CaMeL</div>
+
+        <div class="sd-scorecard">
+          <div class="sd-loopcard-h">Score trajectory</div>
+          <div class="sd-chart" id="sdChart"><!-- rendered by js --></div>
+          <div class="sd-chart-legend">
+            <span><i style="background:var(--state)"></i>utility%</span>
+            <span><i style="background:var(--attack)"></i>ASR%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: the step deck -->
+      <div class="sd-layout-right">
+        <div class="sd-controls">
+          <button class="sd-ctrlbtn" id="sdPrev" title="Previous step">&larr;</button>
+          <div class="sd-dots" id="sdDots"></div>
+          <button class="sd-ctrlbtn" id="sdNext" title="Next step">&rarr;</button>
+          <button class="sd-ctrlbtn play" id="sdPlay">&#9654; Play</button>
+          <span class="sd-stepcount" id="sdStepcount">1 / 1</span>
+        </div>
+
+        <div class="sd-card" id="sdCard"><!-- rendered by js --></div>
+      </div>
+    </div>
+
+    <!-- closing recap -->
+    <div class="sd-recap reveal" id="sdRecap">
+      <span class="kicker">What actually changed, round to round</span>
+      <h2>Three rounds of real gains, one rejected on review.</h2>
+      <div class="sd-recap-tbl-wrap">
+        <table class="sd-recap-tbl">
+          <thead><tr><th>Cand.</th><th>Parent</th><th>Closes</th><th>Utility</th><th>ASR</th><th>Score</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">v0</td><td class="mono">&mdash;</td><td>baseline (model-noise housekeeping already folded in)</td><td>70</td><td>47.4</td><td>22.6</td></tr>
+            <tr><td class="mono">v1</td><td class="mono">v0</td><td>egress gate &mdash; transfers only to pre-approved, named counterparties</td><td>80</td><td>25</td><td>55</td></tr>
+            <tr><td class="mono">v2</td><td class="mono">v1</td><td>independent scope auditor &mdash; ignores claimed authorization on effect-bearing calls</td><td>80</td><td>10</td><td>70</td></tr>
+            <tr class="win"><td class="mono">v3 <span class="sd-shiptag">shipped</span></td><td class="mono">v2</td><td>net-position ledger &mdash; stops over-blocking legitimate multi-leg trades</td><td>90</td><td>10</td><td>80</td></tr>
+            <tr><td class="mono">v4 <span class="sd-widetag" style="background:var(--attack-bg);color:var(--attack);border-color:#e7c6c2">rejected</span></td><td class="mono">v3</td><td>content-manipulation gate &mdash; added complexity, ASR rose instead of falling</td><td>90</td><td>15</td><td>75</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p class="sd-recap-note">Scores are the stage-3 search pool (30 tasks). v4 is a genuine dead end &mdash; utility didn't move but ASR rose (10&rarr;15) once checked empirically, so it was never promoted; v3 remains what shipped. v3 here shipped in the public repo as <code>domains/finance/defenses/glm-5/dtap_def_v4/</code> &mdash; the archive's own numbering starts one housekeeping round earlier than this walkthrough's v0. This is <b>one</b> of the fifteen (domain&nbsp;&times;&nbsp;model) cells in the paper &mdash; the same loop, from a fresh baseline, runs independently for the other fourteen and converges on a different harness each time.</p>
+      <div class="center" style="margin-top:26px">
+        <a class="btn primary" href="index.html#method">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          Back to the abstract loop
+        </a>
+        <a class="btn" href="finance-demo.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          See the finished harness stop an attack &rarr;
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 AutoSafeHarness &middot; Nanxi Li, Yulong Cao, Yejin Choi, Edward Suh, Chaowei Xiao</div>
+    <div><a href="assets/AutoSafeHarness_paper.pdf" target="_blank" rel="noopener">Paper</a> &nbsp;&middot;&nbsp; <a href="https://github.com/SaFo-Lab/AutoSafeHarness" target="_blank" rel="noopener">Code</a> &nbsp;&middot;&nbsp; <a href="index.html#demo">Interactive demo</a> &nbsp;&middot;&nbsp; <a href="index.html">Back to project</a></div>
+  </div>
+</footer>
+
+<script src="search-demo.js"></script>
+</body>
+</html>

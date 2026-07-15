@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Attack Trace Walkthrough — Finance / GLM-5 · AutoSafeHarness</title>
+<meta name="description" content="Step-by-step replay of a real direct pump-and-dump and an indirect payment-redirect attack against AutoSafeHarness's finance-domain harness on GLM-5, built from held-out evaluation traces." />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;550;600;650;700;750;800;850&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="finance-demo.css" />
+</head>
+<body>
+
+<!-- ================= NAV ================= -->
+<nav>
+  <div class="wrap">
+    <a href="index.html" class="brand" style="text-decoration:none">AutoSafe<span>Harness</span></a>
+    <div class="links">
+      <a href="index.html#problem">Problem</a>
+      <a href="index.html#method">Method</a>
+      <a href="index.html#demo">Demos</a>
+      <a href="index.html#results">Results</a>
+      <a href="index.html#cite">Cite</a>
+      <a href="https://github.com/SaFo-Lab/AutoSafeHarness" target="_blank" rel="noopener">Code</a>
+      <a class="pill" href="assets/AutoSafeHarness_paper.pdf" target="_blank" rel="noopener">Read the paper</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ================= TITLE ================= -->
+<header class="trace-hero">
+  <div class="wrap">
+    <a class="backlink" href="index.html#demo">&larr; AutoSafeHarness</a>
+    <h1>Finance &middot; GLM-5 — attack trace walkthrough</h1>
+  </div>
+</header>
+
+<!-- ================= SPLIT: MAP (left, live) + TRACE (right) ================= -->
+<section>
+  <div class="wrap">
+    <div class="tabs" id="tvTabs">
+      <button class="tab active" data-demo="direct">&#9312; Direct attack <span class="t-sub">pump &amp; dump</span></button>
+      <button class="tab" data-demo="indirect">&#9313; Indirect attack <span class="t-sub">injected payment redirect</span></button>
+    </div>
+
+    <div class="tv-split">
+      <div class="tv-split-left">
+        <div class="tv-legend">
+          <span><i class="tv-dot-idle"></i>idle</span>
+          <span><i class="tv-dot-active"></i>evaluating</span>
+          <span><i class="tv-dot-pass"></i>passed</span>
+          <span><i class="tv-dot-block"></i>blocked</span>
+        </div>
+        <div class="tv-mapscroll">
+          <div class="tv-map" id="tvMap">
+            <div class="tv-node" data-node="user"><b>User request</b><span>what the human sent</span></div>
+            <div class="tv-trunk" data-trunk="a"></div>
+            <div class="tv-node" data-node="model"><b>Frozen GLM-5</b><span>plans the next call</span></div>
+            <div class="tv-trunk" data-trunk="b"></div>
+
+            <div class="tv-fan">
+              <div class="tv-stagelabel">before tool-execution</div>
+              <div class="tv-node" data-node="classifier"><b>Tool classifier</b><span>reads vs. effect calls</span></div>
+              <div class="tv-fan-bar" data-bar="pre"></div>
+              <div class="tv-fan-stems" data-stems="pre">
+                <span class="tv-stem" data-stem="wash"></span>
+                <span class="tv-stem" data-stem="dest"></span>
+                <span class="tv-stem" data-stem="auditor"></span>
+              </div>
+              <div class="tv-lanes">
+                <div class="tv-node" data-node="wash"><b>Wash ledger</b><span>account book</span></div>
+                <div class="tv-node" data-node="dest"><b>Destination check</b><span>vs. whitelist</span></div>
+                <div class="tv-node" data-node="auditor"><b>LLM scope auditor</b><span>vs. request</span></div>
+              </div>
+              <div class="tv-fan-stems" data-stems="post">
+                <span class="tv-stem" data-stem="wash"></span>
+                <span class="tv-stem" data-stem="dest"></span>
+                <span class="tv-stem" data-stem="auditor"></span>
+              </div>
+              <div class="tv-fan-bar" data-bar="post"></div>
+            </div>
+
+            <div class="tv-trunk" data-trunk="c"></div>
+            <div class="tv-node" data-node="execute"><b>Tool executes</b><span>the call runs</span></div>
+            <div class="tv-trunk" data-trunk="d"></div>
+
+            <div class="tv-fan">
+              <div class="tv-stagelabel">after tool-execution</div>
+              <div class="tv-fan-bar wide" data-bar="out"></div>
+              <div class="tv-fan-stems two" data-stems="out">
+                <span class="tv-stem" data-stem="ledger"></span>
+                <span class="tv-stem" data-stem="injcheck"></span>
+              </div>
+              <div class="tv-lanes two">
+                <div class="tv-node" data-node="ledger"><b>Account book</b><span id="tvLedgerState">empty</span></div>
+                <div class="tv-node" data-node="injcheck"><b>Injection check</b><span>scans for planted text</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tv-split-right">
+        <div class="tv-controls">
+          <button class="tv-ctrlbtn" id="tvPrev" title="Previous step">&larr;</button>
+          <div class="tv-dots" id="tvDots"></div>
+          <button class="tv-ctrlbtn" id="tvNext" title="Next step">&rarr;</button>
+          <button class="tv-ctrlbtn play" id="tvPlay">&#9654; Play</button>
+          <span class="tv-stepcount" id="tvStepcount">1 / 1</span>
+        </div>
+
+        <div class="tv-card" id="tvCard"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div>&copy; 2026 AutoSafeHarness &middot; Nanxi Li, Yulong Cao, Yejin Choi, Edward Suh, Chaowei Xiao</div>
+    <div><a href="assets/AutoSafeHarness_paper.pdf" target="_blank" rel="noopener">Paper</a> &nbsp;&middot;&nbsp; <a href="https://github.com/SaFo-Lab/AutoSafeHarness" target="_blank" rel="noopener">Code</a> &nbsp;&middot;&nbsp; <a href="index.html#demo">Interactive demo</a> &nbsp;&middot;&nbsp; <a href="index.html">Back to project</a></div>
+  </div>
+</footer>
+
+<script src="finance-demo.js"></script>
+</body>
+</html>
